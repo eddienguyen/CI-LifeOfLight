@@ -7,6 +7,7 @@ import bases.renderers.WordsRenderer;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by huynq on 7/28/17.
@@ -23,6 +24,8 @@ public class TextView extends GamePanel {
     Vector2D offsetText;
     private final Object renderLock;
 
+    private StringBuilder textBuffer;
+
     TextView() {
         super();
         lineRenderers = new ArrayList<>();
@@ -30,6 +33,7 @@ public class TextView extends GamePanel {
         textColor = Color.WHITE;
         fontMetrics = null;
         linesMax = -1;
+        textBuffer = new StringBuilder();
         renderLock = new Object();
     }
 
@@ -48,6 +52,10 @@ public class TextView extends GamePanel {
 
         if (fontMetrics == null) {
             setFontMetrics(g2d.getFontMetrics());
+        }
+
+        if (textBuffer.length() > 0){
+            generateLineRenderers();
         }
 
         drawVerticalLines(g2d);
@@ -80,7 +88,8 @@ public class TextView extends GamePanel {
 
     void clear() {
         synchronized (renderLock) {
-            this.lineRenderers.clear();;
+            this.lineRenderers.clear();
+            this.textBuffer.delete(0, textBuffer.length());
         }
     }
 
@@ -91,39 +100,42 @@ public class TextView extends GamePanel {
         }
     }
 
-    void addText(String str) {
-        if (fontMetrics == null) {
-            System.out.println("Font metrics is not ready");
-        } else {
-            ArrayList<WordsRenderer> wordsRenderers = new ArrayList<>();
+    void generateLineRenderers(){
 
-            for (String words : str.split(";")) {
-                if (words.length() > 0) {
-                    wordsRenderers.addAll(WordsRenderer.parse(words));
-                }
+        //separate lines
+        for (String line: textBuffer.toString().split("\n\r")){
+            LineRenderer newLineRenderer = new LineRenderer();
+            List<WordsRenderer> wordsRenderers = new ArrayList<>();
+
+            for (String wordsGroup: line.split(";")){
+                wordsRenderers.addAll(WordsRenderer.parse(wordsGroup));
             }
 
-            LineRenderer newLineRenderer = new LineRenderer();
-
-            for (int wordIndex = 0; wordIndex < wordsRenderers.size(); wordIndex++) {
-                WordsRenderer wordsRenderer = wordsRenderers.get(wordIndex);
-                newLineRenderer.add(wordsRenderer);
-
+            for (int wordIndex = 0; wordIndex < wordsRenderers.size(); wordIndex++){
+                newLineRenderer.add(wordsRenderers.get(wordIndex));
                 boolean lineLengthExceeds = newLineRenderer.stringWidth(fontMetrics) - 20 > this.getSize().y;
                 boolean isLastWord = (wordIndex == wordsRenderers.size() - 1);
-                if (lineLengthExceeds || isLastWord) {
-                    synchronized (renderLock) {
+                if (lineLengthExceeds || isLastWord){
+                    synchronized (renderLock){
                         this.lineRenderers.add(newLineRenderer);
                         newLineRenderer = new LineRenderer();
-                        if (lineRenderers.size() > linesMax) {
-                            // Trim the begnining
-                            for (int lineIndex = 0; lineIndex < (lineRenderers.size() - linesMax) && lineRenderers.size() > 0; lineIndex++) {
+                        if (lineRenderers.size() > linesMax){
+                            //Trim the beginning
+                            for (int lineIndex = 0; lineIndex < (lineRenderers.size() - linesMax) && lineRenderers.size() > 0; lineIndex++){
                                 lineRenderers.remove(0);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+                            }//for
+                        }//if
+                    }//synchronized
+                }//if
+            }//for
+        }//for
+
+        textBuffer.delete(0, textBuffer.length());
+    }//generatedLineRenderers
+
+    void addText(String str) {
+        textBuffer.append(str);
     }
+
+    void addLine(String str){textBuffer.append(str).append('\n');}
 }

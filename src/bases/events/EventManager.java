@@ -5,6 +5,7 @@ import java.util.List;
 
 /**
  * Created by huynq on 8/1/17.
+ * Modified by eddienguyen on 10/1/2017.
  */
 public class EventManager {
     private static List<EventListener> listeners = new ArrayList<>();
@@ -25,6 +26,10 @@ public class EventManager {
 
     public static void pushUIMessage(String message) {
         push(EventType.UI_MESSAGE," " + message);
+    }
+
+    public static void pushUIMessageNewLine(String message){
+        push(EventType.UI_MESSAGE,message + "\n");
     }
 
     public static void pushHelpMessage() {
